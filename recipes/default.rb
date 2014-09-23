@@ -197,7 +197,10 @@ end
 nagios_conf node['nagios']['server']['name'] do
   config_subdir false
   source 'nagios.cfg.erb'
-  variables(:nagios_service_name => nagios_service_name)
+  variables(
+    :nagios_service_name => nagios_service_name,
+    :config_opts => node['nagios']['conf']
+  )
 end
 
 nagios_conf 'cgi' do

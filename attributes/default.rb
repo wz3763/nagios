@@ -130,11 +130,6 @@ default['nagios']['accept_passive_service_checks'] = 1
 default['nagios']['execute_host_checks']           = 1
 default['nagios']['accept_passive_host_checks']    = 1
 
-default['nagios']['obsess_over_services'] = 0
-default['nagios']['ocsp_command']         = nil
-default['nagios']['obsess_over_hosts']    = 0
-default['nagios']['ochp_command']         = nil
-
 default['nagios']['check_external_commands']     = true
 default['nagios']['default_contact_groups']      = %w(admins)
 default['nagios']['sysadmin_email']              = 'root@localhost'
@@ -198,16 +193,6 @@ default['nagios']['server']['nginx_dispatch'] = 'cgi'
 default['nagios']['server']['stop_apache']    = false
 default['nagios']['server']['redirect_root']  = false
 default['nagios']['server']['normalize_hostname'] = false
-
-default['nagios']['conf']['max_service_check_spread'] = 5
-default['nagios']['conf']['max_host_check_spread']    = 5
-default['nagios']['conf']['service_check_timeout']    = 60
-default['nagios']['conf']['host_check_timeout']       = 30
-default['nagios']['conf']['process_performance_data'] = 0
-default['nagios']['conf']['date_format']              = 'iso8601'
-default['nagios']['conf']['debug_level']              = 0
-default['nagios']['conf']['debug_verbosity']          = 1
-default['nagios']['conf']['debug_file']               = "#{node['nagios']['state_dir']}/#{node['nagios']['server']['name']}.debug"
 
 default['nagios']['cgi']['show_context_help']                        = 1
 default['nagios']['cgi']['authorized_for_system_information']        = '*'
