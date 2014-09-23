@@ -93,58 +93,17 @@ else
     owner node['nagios']['user']
     group web_group
     mode '0640'
-    variables(:nagios_users => nagios_users.users)
+    variables(:nagios_users => nagios_users.users_list)
   end
 end
 
-# find nodes to monitor.  Search in all environments if multi_environment_monitoring is enabled
-Chef::Log.info('Beginning search for nodes.  This may take some time depending on your node count')
-nodes = []
-hostgroups = []
-multi_env = node['nagios']['monitored_environments']
-multi_env_search = multi_env.empty? ? '' : ' AND (chef_environment:' + multi_env.join(' OR chef_environment:') + ')'
+# use the search_helper.rb library to build arrays of hosts / hostgroups to pass to templates
+Chef::Log.info('Beginning search of Chef nodes and roles.  This may take some time depending on the size of your Chef environment')
+search_results = NagiosSearch.new
+hosts = search_results.hosts
+hostgroups = search_results.hostgroups
 
-if node['nagios']['multi_environment_monitoring']
-  nodes = search(:node, "name:*#{multi_env_search}")
-else
-  nodes = search(:node, "name:* AND chef_environment:#{node.chef_environment}")
-end
-
-if nodes.empty?
-  Chef::Log.info('No nodes returned from search, using this node so hosts.cfg has data')
-  nodes << node
-end
-
-# Sort by name to provide stable ordering
-nodes.sort! { |a, b| a.name <=> b.name }
-
-# maps nodes into nagios hostgroups
-service_hosts = {}
-search(:role, '*:*') do |r|
-  hostgroups << r.name
-  nodes.select { |n| n['roles'].include?(r.name) if n['roles'] }.each do |n|
-    service_hosts[r.name] = n[node['nagios']['host_name_attribute']]
-  end
-end
-
-# if using multi environment monitoring add all environments to the array of hostgroups
-if node['nagios']['multi_environment_monitoring']
-  search(:environment, '*:*') do |e|
-    hostgroups << e.name unless hostgroups.include?(e.name)
-    nodes.select { |n| n.chef_environment == e.name }.each do |n|
-      service_hosts[e.name] = n[node['nagios']['host_name_attribute']]
-    end
-  end
-end
-
-# Add all unique platforms to the array of hostgroups
-nodes.each do |n|
-  hostgroups << n['os'] unless hostgroups.include?(n['os']) || n['os'].nil?
-end
-
-# Hack to deal with the nagios server being the first linux system
-hostgroups << node['os'] unless hostgroups.include?(node['os']) || node['os'].nil?
-
+# use the data_bag_helper.rb library to Nagios specific data bags
 nagios_bags         = NagiosDataBags.new
 services            = nagios_bags.get(node['nagios']['services_databag'])
 servicegroups       = nagios_bags.get(node['nagios']['servicegroups_databag'])
@@ -272,7 +231,7 @@ end
 
 nagios_conf 'contacts' do
   variables(:admins => nagios_users.users,
-            :members => nagios_users.return_user_contacts,
+            :members => nagios_users.contacts_list,
             :contacts => contacts,
             :contactgroups => contactgroups,
             :serviceescalations => serviceescalations,
@@ -286,7 +245,7 @@ nagios_conf 'hostgroups' do
 end
 
 nagios_conf 'hosts' do
-  variables(:nodes => nodes,
+  variables(:nodes => hosts,
             :unmanaged_hosts => unmanaged_hosts,
             :hostgroups => hostgroups)
 end
